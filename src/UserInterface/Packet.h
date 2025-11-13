@@ -117,7 +117,6 @@ enum
 	HEADER_CG_HACK								= 105,
     HEADER_CG_CHANGE_NAME                       = 106,
     HEADER_CG_SMS                               = 107,
-    HEADER_CG_CHINA_MATRIX_CARD                 = 108,
     HEADER_CG_LOGIN2                            = 109,
 	HEADER_CG_DUNGEON							= 110,
 	HEADER_CG_LOGIN3							= 111,
@@ -125,8 +124,6 @@ enum
 	HEADER_CG_GUILD_SYMBOL_CRC					= 113,
 	HEADER_CG_SCRIPT_SELECT_ITEM				= 114,
 	HEADER_CG_LOGIN4							= 115,
-
-	HEADER_CG_RUNUP_MATRIX_ANSWER               = 201,
 
 	HEADER_CG_DRAGON_SOUL_REFINE			= 205,
 	HEADER_CG_STATE_CHECKER					= 206,
@@ -256,7 +253,6 @@ enum
     HEADER_GC_SEPCIAL_EFFECT                    = 114,
 	HEADER_GC_NPC_POSITION						= 115,
 
-    HEADER_GC_CHINA_MATRIX_CARD                 = 116,
     HEADER_GC_CHARACTER_UPDATE2                 = 117,
     HEADER_GC_LOGIN_KEY                         = 118,
     HEADER_GC_REFINE_INFORMATION_NEW            = 119,
@@ -294,8 +290,6 @@ enum
 	HEADER_GC_HYBRIDCRYPT_KEYS					= 152,
 	HEADER_GC_HYBRIDCRYPT_SDB					= 153, // SDB means Supplmentary Data Blocks
 	//HYBRID CRYPT
-
-	HEADER_GC_RUNUP_MATRIX_QUIZ                 = 201,
 
 	HEADER_GC_SPECIFIC_EFFECT					= 208,
 	HEADER_GC_DRAGON_SOUL_REFINE						= 209,
@@ -358,11 +352,6 @@ enum
 	PRIVATE_CODE_LENGTH = 8,
 
 	REFINE_MATERIAL_MAX_NUM = 5,
-
-	CHINA_MATRIX_ANSWER_MAX_LEN	= 8,
-
-	RUNUP_MATRIX_QUIZ_MAX_LEN	= 8,
-	RUNUP_MATRIX_ANSWER_MAX_LEN = 4,
 
 	WEAR_MAX_NUM = 11,
 
@@ -997,18 +986,6 @@ typedef struct command_crc_report
 	uint32_t dwProcessCRC32;
 	uint32_t dwRootPackCRC32;
 } TPacketCGCRCReport;
-
-typedef struct command_china_matrix_card
-{
-	uint8_t	bHeader;
-	char	szAnswer[CHINA_MATRIX_ANSWER_MAX_LEN + 1];
-} TPacketCGChinaMatrixCard;
-
-typedef struct command_runup_matrix_answer
-{
-	uint8_t	bHeader;
-	char	szAnswer[RUNUP_MATRIX_ANSWER_MAX_LEN + 1];
-} TPacketCGRunupMatrixAnswer;
 
 enum EPartyExpDistributionType
 {
@@ -2314,19 +2291,6 @@ enum EBlockAction
     BLOCK_MESSENGER_INVITE      = (1 << 4),
     BLOCK_PARTY_REQUEST         = (1 << 5),
 };
-
-typedef struct packet_china_matrixd_card
-{
-	uint8_t	bHeader;
-	uint32_t	dwRows;
-	uint32_t	dwCols;
-} TPacketGCChinaMatrixCard;
-
-typedef struct packet_runup_matrixd_quiz
-{
-	uint8_t	bHeader;
-	char	szQuiz[RUNUP_MATRIX_QUIZ_MAX_LEN + 1];	
-} TPacketGCRunupMatrixQuiz;
 
 typedef struct packet_login_key
 {
