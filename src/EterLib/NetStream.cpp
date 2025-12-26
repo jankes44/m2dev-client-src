@@ -419,6 +419,13 @@ bool CNetworkStream::Connect(const CNetworkAddress& c_rkNetAddr, int limitSec)
 	DWORD arg = 1;
 	ioctlsocket(m_sock, FIONBIO, &arg);	// Non-blocking mode
 
+	// Enable TCP_NODELAY to disable Nagle's algorithm for lower latency
+	int opt = 1;
+	if (setsockopt(m_sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&opt, sizeof(opt)) != 0)
+	{
+		TraceError("setsockopt TCP_NODELAY failed: %d", WSAGetLastError());
+	}
+
 	if (connect(m_sock, (PSOCKADDR)&m_addr, m_addr.GetSize()) == SOCKET_ERROR)
 	{
 		int error = WSAGetLastError();
