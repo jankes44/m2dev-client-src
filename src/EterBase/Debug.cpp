@@ -6,6 +6,7 @@
 #include "Singleton.h"
 #include "Timer.h"
 #include <filesystem>
+#include <utf8.h>
 
 const DWORD DEBUG_STRING_MAX_LEN = 1024;
 
@@ -281,13 +282,18 @@ void LogBoxf(const char* c_szFormat, ...)
 	LogBox(szBuf);
 }
 
-void LogBox(const char* c_szMsg, const char * c_szCaption, HWND hWnd)
+void LogBox(const char* c_szMsg, const char* c_szCaption, HWND hWnd)
 {
 	if (!hWnd)
 		hWnd = g_PopupHwnd;
 
-	MessageBox(hWnd, c_szMsg, c_szCaption ? c_szCaption : "LOG", MB_OK);
-	Tracen(c_szMsg);
+	std::wstring wMsg = Utf8ToWide(c_szMsg ? c_szMsg : "");
+	std::wstring wCaption = Utf8ToWide(c_szCaption ? c_szCaption : "LOG");
+
+	MessageBoxW(hWnd, wMsg.c_str(), wCaption.c_str(), MB_OK);
+
+	// Logging stays UTF-8
+	Tracen(c_szMsg ? c_szMsg : "");
 }
 
 void LogFile(const char * c_szMsg)
@@ -312,7 +318,7 @@ void OpenLogFile(bool bUseLogFIle)
 	}
 
 #ifndef _DISTRIBUTE 
-	freopen("log/syserr.txt", "w", stderr);
+	_wfreopen(L"log/syserr.txt", L"w", stderr);
 
 	if (bUseLogFIle)
 	{
@@ -326,6 +332,6 @@ void OpenConsoleWindow()
 {
 	AllocConsole();
 
-	freopen("CONOUT$", "a", stdout);
-	freopen("CONIN$", "r", stdin);
+	_wfreopen(L"CONOUT$", L"a", stdout);
+	_wfreopen(L"CONIN$", L"r", stdin);
 }
