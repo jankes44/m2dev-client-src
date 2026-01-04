@@ -30,7 +30,7 @@ enum
 	HEADER_CG_QUICKSLOT_SWAP                    = 18,
 	HEADER_CG_WHISPER							= 19,
 	HEADER_CG_ITEM_DROP2                        = 20,	
-	//HEADER_BLANK21								= 21,
+	HEADER_CG_ITEM_DESTROY						= 21,
 	//HEADER_BLANK22								= 22,
 	//HEADER_BLANK22								= 23,
 	//HEADER_BLANK24								= 24,
@@ -575,6 +575,12 @@ typedef struct command_item_drop2
     uint32_t       gold;
     uint8_t        count;
 } TPacketCGItemDrop2;
+
+typedef struct command_item_destroy
+{
+	uint8_t  header;
+	TItemPos pos;
+} TPacketCGItemDestroy;
 
 typedef struct command_item_move
 {

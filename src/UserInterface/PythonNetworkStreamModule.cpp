@@ -737,6 +737,30 @@ PyObject* netSendItemDropPacketNew(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
+PyObject* netSendItemDestroyPacket(PyObject* poSelf, PyObject* poArgs)
+{
+	TItemPos Cell;
+	switch (PyTuple_Size(poArgs))
+	{
+	case 1:
+		if (!PyTuple_GetInteger(poArgs, 0, &Cell.cell))
+			return Py_BuildException();
+		break;
+	case 2:
+		if (!PyTuple_GetByte(poArgs, 0, &Cell.window_type))
+			return Py_BuildException();
+		if (!PyTuple_GetInteger(poArgs, 1, &Cell.cell))
+			return Py_BuildException();
+		break;
+	default:
+		return Py_BuildException();
+	}
+
+	CPythonNetworkStream& rkNetStream=CPythonNetworkStream::Instance();
+	rkNetStream.SendItemDestroyPacket(Cell);
+	return Py_BuildNone();
+}
+
 PyObject* netSendElkDropPacket(PyObject* poSelf, PyObject* poArgs)
 {
 	int iElk;
@@ -1739,6 +1763,7 @@ void initnet()
 		{ "SendItemUseToItemPacket",			netSendItemUseToItemPacket,				METH_VARARGS },
 		{ "SendItemDropPacket",					netSendItemDropPacket,					METH_VARARGS },
 		{ "SendItemDropPacketNew",				netSendItemDropPacketNew,				METH_VARARGS },
+		{ "SendItemDestroyPacket",				netSendItemDestroyPacket,				METH_VARARGS },
 		{ "SendElkDropPacket",					netSendElkDropPacket,					METH_VARARGS },
 		{ "SendGoldDropPacketNew",				netSendGoldDropPacketNew,				METH_VARARGS },
 		{ "SendItemMovePacket",					netSendItemMovePacket,					METH_VARARGS },
