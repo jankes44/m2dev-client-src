@@ -580,6 +580,10 @@ void CPythonNetworkStream::GamePhase()
 				ret = RecvDigMotionPacket();
 				break;
 
+			case HEADER_GC_IDLE_HUNTING:
+				ret = RecvIdleHuntingPacket();
+				break;
+
 			case HEADER_GC_HANDSHAKE:
 				RecvHandshakePacket();
 				return;
@@ -4453,6 +4457,48 @@ bool CPythonNetworkStream::RecvDigMotionPacket()
 	for (int i = 0; i < kDigMotion.count; ++i)
 		pkInstMain->PushOnceMotion(CRaceMotionData::NAME_DIG);
 
+	return true;
+}
+
+// Idle Hunting
+bool CPythonNetworkStream::SendIdleHuntingPacket(BYTE bySubheader, DWORD dwValue)
+{
+	TPacketCGIdleHunting packet;
+	packet.header = HEADER_CG_IDLE_HUNTING;
+	packet.subheader = bySubheader;
+	packet.value = dwValue;
+	
+	if (!Send(sizeof(packet), &packet))
+	{
+		Tracen("SendIdleHuntingPacket Error");
+		return false;
+	}
+	
+	Tracef(" SendIdleHuntingPacket : subheader=%d, value=%d\n", bySubheader, dwValue);
+	return SendSequence();
+}
+
+bool CPythonNetworkStream::RecvIdleHuntingPacket()
+{
+	TPacketGCIdleHunting packet;
+	if (!Recv(sizeof(packet), &packet))
+		return false;
+	
+	Tracef(" RecvIdleHuntingPacket : state=%d, mob_vnum=%d, time_left=%d\n", 
+		packet.state, packet.mob_vnum, packet.time_left);
+	
+	// Call Python callback
+	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], 
+		"BINARY_Idle_Hunting_Info",
+		Py_BuildValue("(biiiii)", 
+			packet.state,
+			packet.mob_vnum,
+			packet.time_left,
+			packet.hunt_duration,
+			packet.max_daily_seconds,
+			packet.total_time_today)
+	);
+	
 	return true;
 }
 

@@ -128,6 +128,8 @@ enum
 	HEADER_CG_SCRIPT_SELECT_ITEM				= 114,
 	HEADER_CG_LOGIN4							= 115,
 
+	HEADER_CG_IDLE_HUNTING					= 207,
+
 	HEADER_CG_DRAGON_SOUL_REFINE			= 205,
 	HEADER_CG_STATE_CHECKER					= 206,
 
@@ -285,6 +287,8 @@ enum
 	HEADER_GC_MAIN_CHARACTER3_BGM				= 137,
 	HEADER_GC_MAIN_CHARACTER4_BGM_VOL			= 138,
 	// END_OF_SUPPORT_BGM
+
+	HEADER_GC_IDLE_HUNTING					= 139,
 
     HEADER_GC_AUTH_SUCCESS                      = 150,
     HEADER_GC_PANAMA_PACK						= 151,
@@ -1032,6 +1036,22 @@ typedef struct command_script_select_item
     uint8_t header;
     uint32_t selection;
 } TPacketCGScriptSelectItem;
+
+// Idle Hunting
+enum
+{
+	IDLE_HUNTING_SUBHEADER_CG_GET_INFO	= 0,
+	IDLE_HUNTING_SUBHEADER_CG_START		= 1,
+	IDLE_HUNTING_SUBHEADER_CG_STOP		= 2,
+	IDLE_HUNTING_SUBHEADER_CG_CLAIM		= 3,
+};
+
+typedef struct command_idle_hunting
+{
+	uint8_t header;
+	uint8_t subheader;
+	uint32_t value;  // mob_vnum for START, 0 for others
+} TPacketCGIdleHunting;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // From Server
@@ -2442,6 +2462,17 @@ typedef struct packet_dig_motion
     uint32_t target_vid;
 	uint8_t count;
 } TPacketGCDigMotion;
+
+typedef struct packet_gc_idle_hunting
+{
+	uint8_t header;
+	uint8_t state;              // 0=idle, 1=pending, 2=claimable
+	uint32_t mob_vnum;          // Current target mob (0 if none)
+	uint32_t time_left;         // Remaining daily time (seconds)
+	uint32_t hunt_duration;     // Current hunt duration (seconds)
+	uint32_t max_daily_seconds; // Daily limit
+	uint32_t total_time_today;  // Time used today
+} TPacketGCIdleHunting;
 
 typedef struct SPacketGCOnTime
 {

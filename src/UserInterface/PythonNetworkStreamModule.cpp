@@ -1344,6 +1344,35 @@ PyObject* netSendQuestCancelPacket(PyObject* poSelf, PyObject* poArgs)
 	return Py_BuildNone();
 }
 
+// Idle Hunting
+PyObject* netSendIdleHuntingQuery(PyObject* poSelf, PyObject* poArgs)
+{
+	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_GET_INFO, 0);
+	return Py_BuildNone();
+}
+
+PyObject* netSendIdleHuntingStart(PyObject* poSelf, PyObject* poArgs)
+{
+	int iMobVnum;
+	if (!PyTuple_GetInteger(poArgs, 0, &iMobVnum))
+		return Py_BuildException();
+	
+	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_START, iMobVnum);
+	return Py_BuildNone();
+}
+
+PyObject* netSendIdleHuntingStop(PyObject* poSelf, PyObject* poArgs)
+{
+	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_STOP, 0);
+	return Py_BuildNone();
+}
+
+PyObject* netSendIdleHuntingClaim(PyObject* poSelf, PyObject* poArgs)
+{
+	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_CLAIM, 0);
+	return Py_BuildNone();
+}
+
 PyObject* netSendGuildAddMemberPacket(PyObject* poSelf, PyObject* poArgs)
 {
 	int iVID;
@@ -1827,6 +1856,10 @@ void initnet()
 		{ "SendQuestInputStringPacket",				netSendQuestInputStringPacket,				METH_VARARGS },
 		{ "SendQuestConfirmPacket",					netSendQuestConfirmPacket,					METH_VARARGS },
 		{ "SendQuestCancelPacket",					netSendQuestCancelPacket,					METH_VARARGS },
+		{ "SendIdleHuntingQuery",					netSendIdleHuntingQuery,					METH_VARARGS },
+		{ "SendIdleHuntingStart",					netSendIdleHuntingStart,					METH_VARARGS },
+		{ "SendIdleHuntingStop",					netSendIdleHuntingStop,						METH_VARARGS },
+		{ "SendIdleHuntingClaim",					netSendIdleHuntingClaim,					METH_VARARGS },
 		{ "SendGuildAddMemberPacket",				netSendGuildAddMemberPacket,				METH_VARARGS },
 		{ "SendGuildRemoveMemberPacket",			netSendGuildRemoveMemberPacket,				METH_VARARGS },
 		{ "SendGuildChangeGradeNamePacket",			netSendGuildChangeGradeNamePacket,			METH_VARARGS },
