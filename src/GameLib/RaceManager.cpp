@@ -2,12 +2,11 @@
 #include "RaceManager.h"
 #include "RaceMotionData.h"
 #include "PackLib/PackManager.h"
+#include "EterLib/GameThreadPool.h"
 #include <future>
 #include <vector>
 #include <set>
 #include <algorithm>
-
-bool CRaceManager::s_bPreloaded = false;
 
 bool __IsGuildRace(unsigned race)
 {
@@ -374,25 +373,61 @@ CRaceData * CRaceManager::GetSelectedRaceDataPointer()
 
 BOOL CRaceManager::GetRaceDataPointer(DWORD dwRaceIndex, CRaceData ** ppRaceData)
 {
-	TRaceDataIterator itor = m_RaceDataMap.find(dwRaceIndex);
-
-	if (m_RaceDataMap.end() == itor)
+	// Thread-safe lookup
 	{
-		CRaceData* pRaceData = __LoadRaceData(dwRaceIndex);
+		std::lock_guard<std::mutex> lock(m_RaceDataMapMutex);
+		TRaceDataIterator itor = m_RaceDataMap.find(dwRaceIndex);
 
-		if (pRaceData)
+		if (m_RaceDataMap.end() != itor)
 		{
-			m_RaceDataMap.insert(TRaceDataMap::value_type(dwRaceIndex, pRaceData));
-			*ppRaceData = pRaceData;
+			*ppRaceData = itor->second;
 			return TRUE;
 		}
-
-		TraceError("CRaceManager::GetRaceDataPointer: cannot load data by dwRaceIndex %lu", dwRaceIndex);
-		return FALSE;
 	}
 
-	*ppRaceData = itor->second;
-	return TRUE;
+	// Check if already loading asynchronously
+	{
+		std::lock_guard<std::mutex> lock(m_LoadingRacesMutex);
+		if (m_LoadingRaces.find(dwRaceIndex) != m_LoadingRaces.end())
+		{
+			// Race is being loaded asynchronously
+			// Wait for it to complete by loading synchronously now (needed for immediate visibility)
+			Tracef("CRaceManager::GetRaceDataPointer: Race %lu is loading async, switching to sync load\n", dwRaceIndex);
+		}
+	}
+
+	// Not found - load synchronously to ensure immediate availability
+	CRaceData* pRaceData = __LoadRaceData(dwRaceIndex);
+
+	if (pRaceData)
+	{
+		std::lock_guard<std::mutex> lock(m_RaceDataMapMutex);
+		// Check again in case another thread loaded it
+		TRaceDataIterator itor = m_RaceDataMap.find(dwRaceIndex);
+		if (m_RaceDataMap.end() != itor)
+		{
+			// Already loaded by another thread, use that one
+			delete pRaceData;
+			*ppRaceData = itor->second;
+		}
+		else
+		{
+			// Insert our newly loaded data
+			m_RaceDataMap.insert(TRaceDataMap::value_type(dwRaceIndex, pRaceData));
+			*ppRaceData = pRaceData;
+		}
+
+		// Remove from loading set if present
+		{
+			std::lock_guard<std::mutex> lock2(m_LoadingRacesMutex);
+			m_LoadingRaces.erase(dwRaceIndex);
+		}
+
+		return TRUE;
+	}
+
+	*ppRaceData = NULL;
+	return FALSE;
 }
 
 void CRaceManager::SetPathName(const char * c_szPathName)
@@ -453,93 +488,4 @@ CRaceManager::CRaceManager()
 CRaceManager::~CRaceManager()
 {
 	Destroy();
-}
-
-void CRaceManager::PreloadPlayerRaceMotions()
-{
-	if (s_bPreloaded)
-		return;
-
-	CRaceManager& rkRaceMgr = CRaceManager::Instance();
-
-	// Phase 1: Parallel Load Race Data (MSM)
-	std::vector<std::future<CRaceData*>> raceLoadFutures;
-
-	for (DWORD dwRace = 0; dwRace <= 7; ++dwRace)
-	{
-		TRaceDataIterator it = rkRaceMgr.m_RaceDataMap.find(dwRace);
-		if (it == rkRaceMgr.m_RaceDataMap.end()) {
-			raceLoadFutures.push_back(std::async(std::launch::async, [&rkRaceMgr, dwRace]() {
-				return rkRaceMgr.__LoadRaceData(dwRace);
-			}));
-		}
-	}
-
-	for (auto& f : raceLoadFutures) {
-		CRaceData* pRaceData = f.get();
-		if (pRaceData) {
-			rkRaceMgr.m_RaceDataMap.insert(TRaceDataMap::value_type(pRaceData->GetRaceIndex(), pRaceData));
-		}
-	}
-
-	// Phase 2: Parallel Load Motions
-	std::set<CGraphicThing*> uniqueMotions;
-
-	for (DWORD dwRace = 0; dwRace <= 7; ++dwRace)
-	{
-		CRaceData* pRaceData = NULL;
-		TRaceDataIterator it = rkRaceMgr.m_RaceDataMap.find(dwRace);
-		if (it != rkRaceMgr.m_RaceDataMap.end())
-			pRaceData = it->second;
-
-		if (!pRaceData)
-			continue;
-
-		CRaceData::TMotionModeDataIterator itor;
-		if (pRaceData->CreateMotionModeIterator(itor))
-		{
-			do
-			{
-				CRaceData::TMotionModeData* pMotionModeData = itor->second;
-				for (auto& itorMotion : pMotionModeData->MotionVectorMap)
-				{
-					const CRaceData::TMotionVector& c_rMotionVector = itorMotion.second;
-					for (const auto& motion : c_rMotionVector)
-					{
-						if (motion.pMotion)
-							uniqueMotions.insert(motion.pMotion);
-					}
-				}
-			}
-			while (pRaceData->NextMotionModeIterator(itor));
-		}
-	}
-
-	std::vector<CGraphicThing*> motionVec(uniqueMotions.begin(), uniqueMotions.end());
-	size_t total = motionVec.size();
-
-	if (total > 0) {
-		size_t threadCount = std::thread::hardware_concurrency();
-		if (threadCount == 0) threadCount = 4;
-		
-		size_t chunkSize = (total + threadCount - 1) / threadCount;
-		std::vector<std::future<void>> motionFutures;
-
-		for (size_t i = 0; i < threadCount; ++i) {
-			size_t start = i * chunkSize;
-			size_t end = std::min(start + chunkSize, total);
-			
-			if (start < end) {
-				motionFutures.push_back(std::async(std::launch::async, [start, end, &motionVec]() {
-					for (size_t k = start; k < end; ++k) {
-						motionVec[k]->AddReference();
-					}
-				}));
-			}
-		}
-		
-		for (auto& f : motionFutures) f.get();
-	}
-
-	s_bPreloaded = true;
 }
