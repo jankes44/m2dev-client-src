@@ -245,6 +245,10 @@ class CPythonNetworkStream : public CNetworkStream, public CSingleton<CPythonNet
 		// Dig
 		bool RecvDigMotionPacket();
 
+		// Idle Hunting
+		bool SendIdleHuntingPacket(BYTE bySubheader, DWORD dwValue = 0);
+		bool RecvIdleHuntingPacket();
+
 		// Fishing
 		bool SendFishingPacket(int iRotation);
 		bool SendGiveItemPacket(DWORD dwTargetVID, TItemPos ItemPos, int iItemCount);
