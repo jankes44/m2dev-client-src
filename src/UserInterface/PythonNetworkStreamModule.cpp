@@ -1353,11 +1353,11 @@ PyObject* netSendIdleHuntingQuery(PyObject* poSelf, PyObject* poArgs)
 
 PyObject* netSendIdleHuntingStart(PyObject* poSelf, PyObject* poArgs)
 {
-	int iMobVnum;
-	if (!PyTuple_GetInteger(poArgs, 0, &iMobVnum))
+	int iGroupID;
+	if (!PyTuple_GetInteger(poArgs, 0, &iGroupID))
 		return Py_BuildException();
 	
-	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_START, iMobVnum);
+	CPythonNetworkStream::Instance().SendIdleHuntingPacket(IDLE_HUNTING_SUBHEADER_CG_START, iGroupID);
 	return Py_BuildNone();
 }
 
