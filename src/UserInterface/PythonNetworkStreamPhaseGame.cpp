@@ -4245,6 +4245,9 @@ bool CPythonNetworkStream::RecvChannelPacket()
 		return false;
 
 	//Tracef(" >> CPythonNetworkStream::RecvChannelPacket(channel=%d)\n", kChannelPacket.channel);
+	
+	// Notify Python about the channel change so it can update UI and channel.inf
+	PyCallClassMemberFunc(m_apoPhaseWnd[PHASE_WINDOW_GAME], "OnChannelUpdate", Py_BuildValue("(i)", kChannelPacket.channel));
 
 	return true;
 }
